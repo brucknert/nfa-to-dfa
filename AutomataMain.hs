@@ -1,19 +1,15 @@
 module Main(main) where
 
--- library imports
 import System.IO
 import System.Environment
 import Data.Char
 import System.Exit
 
--- our imports
-import TuringData
-import TuringFuncs
+import AutomataData
+import AutomataData
 
--- program's entry point
 main :: IO ()
 main = do
-	--
 	args <- getArgs
 	let (simulate, inFile) = procArgs args
 -- 	putStrLn $ show (simulate, inFile)
@@ -32,12 +28,12 @@ main = do
 	hClose hInFile
 	return ()
 
--- parse list of arguments into couple
 procArgs :: [String] -> (Bool,String)
-procArgs [] = error "expects 2 arguments"  -- not really needed in this program but you can do something similar,
-procArgs [x] = error "expects 2 arguments" -- if you also want to handle zero or one arguments.
 procArgs [x,y]
 	| x=="-i" = (False, y)
-	| x=="-s" = (True, y)
+	| x=="-t" = (True, y)
 	| otherwise = error "unknown argument"
 procArgs _ = error "expects 2 arguments"
+
+-- vim: expandtab:shiftwidth=4:tabstop=4:softtabstop=0:textwidth=120
+
