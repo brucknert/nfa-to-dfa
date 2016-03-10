@@ -1,44 +1,33 @@
--- export everything in this module
-module TuringData where
+module AutomataData where
 
--- export only selected objects
--- module TuringData ( TSMachine ) where
 
--- synonyms helps to understand semantics
-type TInput = String
-type TState = String
-type TSymbol = Char
+type AInput = String
+type AState = Char
+type ASymbol = Char
 
---
-data Action
-	= ALeft
-	| ARight
-	| AWrite TSymbol
-   deriving (Eq, Show)
-
---
-	, fromSym :: TSymbol
-	, toState :: TState
-	, toAction :: Action
+data Transition = Trans
+	{ fromState :: AState
+	, sym :: ASymbol
+	, toState :: AState
 	} deriving (Eq)
 
 instance Show Transition where
 	show (Trans fq fs tq ta) = "\n\t" ++ show fq ++ "," ++ show fs ++ "," ++ show tq ++ "," ++ show ta
 
---
-data TSMachine = TSM
-	{ states :: [TState]
-	, alphabet :: [TSymbol]
+-- M = (Q, Σ, δ, q0, F)
+data AMachine = AM
+	{ states :: [AState]
+	, alphabet :: [ASymbol]
 	, trans :: [Transition]
-	, start :: TState
-	, end :: TState
+	, start :: [AState]
+	, end :: AState
 	} deriving (Eq)
 
-instance Show TSMachine where
-	show (TSM q a t s f) = show q ++ "\n" ++ show a ++ "\n" ++ show t ++ "\n" ++ show s ++ "\n" ++ show f
+instance Show AMachine where
+	show (AM q a t s f) = show q ++ "\n" ++ show a ++ "\n" ++ show t ++ "\n" ++ show s ++ "\n" ++ show f
 
 --
-data Tape a = Tape a [a] [a]
+-- data Tape a = Tape a [a] [a]
 
-instance (Show a) => Show (Tape a) where
-	show (Tape x lts rts) = show (reverse $ take 20 lts) ++ "[" ++ (show x) ++ "]" ++ show (take 20 rts)
+--instance (Show a) => Show (Tape a) where
+--	show (Tape x lts rts) = show (reverse $ take 20 lts) ++ "[" ++ (show x) ++ "]" ++ show (take 20 rts)

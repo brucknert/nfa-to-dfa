@@ -1,3 +1,12 @@
+-- 1. Q':= 2^Q \ {∅}.
+-- 2. q'0 := ε-uzávěr(q0)
+-- 3. δ': Q' × Σ → Q' je vypočtena takto:
+-- • Nechť ∀T ∈ Q', a ∈ Σ : δ_(T, a) = Uq∈T δ(q, a).
+-- • Pak pro každé T ∈ Q', a ∈ Σ:
+-- (a) pokud δ_(T, a) != ∅, pak δ'(T, a) = ε-uzávěr(δ_(T, a)),
+-- (b) jinak δ'(T, a) není definována.
+-- 4. F' := {S | S ∈ Q' ∧ S ∩ F != ∅}.
+--
 module Main(main) where
 
 import System.IO
@@ -36,4 +45,3 @@ procArgs [x,y]
 procArgs _ = error "expects 2 arguments"
 
 -- vim: expandtab:shiftwidth=4:tabstop=4:softtabstop=0:textwidth=120
-

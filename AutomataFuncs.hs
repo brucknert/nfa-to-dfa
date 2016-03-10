@@ -1,21 +1,19 @@
-module TuringFuncs
-( getTuringMachine
-, simulateTuringMachine
-, dumpTuringMachine
+module AutomataFuncs
+( getAutomataMachine
+, simulateAutomataMachine
+, dumpAutomataMachine
 ) where
 
--- library imports
 import System.IO
 import Data.List
 import Data.List.Split
 import Data.String
 
--- our imports
-import TuringData
+import AutomataData
 
 --
-getTuringMachine :: Handle -> IO TSMachine
-getTuringMachine hIn = do
+getAutomataMachine :: Handle -> IO TSMachine
+getAutomataMachine hIn = do
 	content <- hGetContents hIn
 -- 	putStrLn content
 	let lns = lines content
@@ -47,14 +45,14 @@ procLns _ = error "bad syntax"
 -- !!! you can either make it behave as expected and use it directly (no need for 'dumpTuringMachine')
 -- !!! or ixmplement your own show function with pretty output (good for debugging)
 -- !!! and define separate function like this to dump object in expected format (it is not very pretty -> not good for debugging)
-dumpTuringMachine :: TSMachine -> IO ()
-dumpTuringMachine ts = do
-	putStrLn "\ndumping TS ...\n"
+dumpAutomataMachine :: TSMachine -> IO ()
+dumpAutomataMachine ts = do
+	putStrLn "\ndumping Automata ...\n"
 	putStrLn $ show ts
 
 -- simulate TS on input
-simulateTuringMachine :: TSMachine -> TInput -> IO ()
-simulateTuringMachine ts input = do
+simulateAutomataMachine :: TSMachine -> TInput -> IO ()
+simulateAutomataMachine ts input = do
 	putStrLn "\nsimulating TS ...\n"
 	runUTM (trans ts) (start ts) (end ts) (Tape '$' [] input)  -- rules expect $ as the first tape symbol
 
