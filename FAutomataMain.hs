@@ -19,21 +19,22 @@ import FAutomataFuncs
 main :: IO ()
 main = do
     args <- getArgs
-    let (simulate, inFile) = procArgs args
+    let (transform, inFile) = procArgs args
 
---  putStrLn $ show (simulate, inFile)
+--  putStrLn $ show (transform, inFile)
     content <- if inFile == "stdin" 
         then hGetContents stdin
-    else do 
-        hInFile <- openFile inFile ReadMode
-        content <- hGetContents hInFile
-        return content
+        else do 
+            hInFile <- openFile inFile ReadMode
+            content <- hGetContents hInFile
+            return content
 
     fa <- getFiniteAutomata content
 --  putStrLn $ show fa
     --
-    if simulate then transformFiniteAutomata fa
-                else dumpFiniteAutomata fa
+    if transform 
+        then transformFiniteAutomata fa
+        else dumpFiniteAutomata fa
     --
     return ()
 
