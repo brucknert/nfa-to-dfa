@@ -8,11 +8,8 @@ import FAutomataData
 
 getFiniteAutomata :: String -> IO FAutomata
 getFiniteAutomata content = do
---  putStrLn content
     let lns = lines content
---  putStrLn $ show lns
     let fa = procLns lns
---  putStrLn $ show tsm
     return fa
 
 dumpFiniteAutomata :: FAutomata -> IO ()
