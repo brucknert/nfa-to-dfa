@@ -1,7 +1,9 @@
 module FAutomataData where
 
+import Data.List
+
 type AState = String
-type ASymbol = Char
+type ASymbol = String
 
 data Transition = Trans
     { fromState :: AState
@@ -10,7 +12,11 @@ data Transition = Trans
     } deriving (Eq)
 
 instance Show Transition where
-    show (Trans aq as af) = "\n\t" ++ show aq ++ "," ++ show as ++ "," ++  show af
+    show (Trans aq as af) =  id aq ++ "," ++ id as ++ "," ++  id af ++ "\n"
+
+printTransition :: [Transition] -> String
+printTransition (x:xs) = show x ++ printTransition xs
+printTransition [] = [] 
 
 data FAutomata = FA
     { states :: [AState]
@@ -21,7 +27,7 @@ data FAutomata = FA
     } deriving (Eq)
 
 instance Show FAutomata where
-    show (FA q a t s f) = show q ++ "\n" ++ show a ++ "\n" ++ show t ++ "\n" ++ show s ++ "\n" ++ show f
+    show (FA q a t s f) = id intercalate "," q ++ "\n" ++ id s ++ "\n" ++ id intercalate "," f ++ "\n" ++ printTransition t 
 
 -- vim: expandtab:shiftwidth=4:tabstop=4:softtabstop=0:textwidth=120
 

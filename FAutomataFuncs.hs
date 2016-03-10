@@ -17,12 +17,12 @@ getFiniteAutomata content = do
 
 dumpFiniteAutomata :: FAutomata -> IO ()
 dumpFiniteAutomata fa = do
-    putStrLn "\ndumping TS ...\n"
+    putStrLn "\ndumping FA ...\n"
     putStrLn $ show fa
 
 transformFiniteAutomata :: FAutomata -> IO ()
 transformFiniteAutomata fa = do
-    putStrLn "\nsimulating TS ...\n"
+    putStrLn "\ntransforming FA ...\n"
 
 procLns :: [String] -> FAutomata
 procLns (states:[start]:final:transitions) =
@@ -34,8 +34,7 @@ procLns (states:[start]:final:transitions) =
         getAlph = [] 
         getRule rule = getRule' $ splitOn "," rule
         getRule' :: [String] -> Transition
-        getRule' [q1,[sym],q2] =  Trans q1 sym q2
-        getRule' [q1,"",q2] =  Trans q1 'E' q2
+        getRule' [q1,sym,q2] =  Trans q1 sym q2
         getRule' _ = error "bad transition syntax"
 procLns _ = error "bad syntax"
 
