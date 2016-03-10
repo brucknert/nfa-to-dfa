@@ -6,9 +6,8 @@ import Data.List.Split
 import Data.String
 import FAutomataData
 
-getFiniteAutomata :: Handle -> IO FAutomata
-getFiniteAutomata hIn = do
-	content <- hGetContents hIn
+getFiniteAutomata :: String -> IO FAutomata
+getFiniteAutomata content = do
 -- 	putStrLn content
 	let lns = lines content
 -- 	putStrLn $ show lns
