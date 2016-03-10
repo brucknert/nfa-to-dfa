@@ -17,7 +17,6 @@ getFiniteAutomata content = do
 
 dumpFiniteAutomata :: FAutomata -> IO ()
 dumpFiniteAutomata fa = do
-    putStrLn "\ndumping FA ...\n"
     putStrLn $ show fa
 
 transformFiniteAutomata :: FAutomata -> IO ()
