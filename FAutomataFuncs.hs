@@ -1,4 +1,4 @@
-module FAutomataFuncs(getFiniteAutomata) where
+module FAutomataFuncs(getFiniteAutomata, dumpFiniteAutomata, transformFiniteAutomata) where
 
 import System.IO
 import Data.List
@@ -11,10 +11,19 @@ getFiniteAutomata hIn = do
 	content <- hGetContents hIn
 -- 	putStrLn content
 	let lns = lines content
- 	putStrLn $ show lns
+-- 	putStrLn $ show lns
 	let fa = procLns lns
 -- 	putStrLn $ show tsm
 	return fa
+
+dumpFiniteAutomata :: FAutomata -> IO ()
+dumpFiniteAutomata fa = do
+	putStrLn "\ndumping TS ...\n"
+	putStrLn $ show fa
+
+transformFiniteAutomata :: FAutomata -> IO ()
+transformFiniteAutomata fa = do
+	putStrLn "\nsimulating TS ...\n"
 
 procLns :: [String] -> FAutomata
 procLns (states:[start]:final:transitions) =

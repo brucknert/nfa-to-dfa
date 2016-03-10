@@ -14,15 +14,15 @@ main = do
 	args <- getArgs
 	let (simulate, inFile) = procArgs args
 
- 	putStrLn $ show (simulate, inFile)
+-- 	putStrLn $ show (simulate, inFile)
 	--
 	hInFile <- openFile inFile ReadMode
 	fa <- getFiniteAutomata hInFile
- 	putStrLn $ show fa
+-- 	putStrLn $ show fa
 	--
 	--
---	if simulate then simulateTuringMachine ts input
---				else dumpTuringMachine ts
+	if simulate then transformFiniteAutomata fa
+				else dumpFiniteAutomata fa
 	--
 	hClose hInFile
 	return ()
