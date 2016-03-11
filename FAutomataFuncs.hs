@@ -20,8 +20,9 @@ dumpFiniteAutomata fa = do
 transformFiniteAutomata :: FAutomata -> IO ()
 transformFiniteAutomata (FA q a t s f)  = do
     putStrLn "\ntransforming FA ...\n"
-    let eps = nub $ getEpsClosure t [s]
+    let eps = getNewState t s
     putStrLn $ show eps
+    putStrLn $ show (isFiniteState eps f)
     return ()
 
 getAlphabet :: [Transition] -> [ASymbol]
@@ -34,20 +35,27 @@ getAlphabet xs = nub $ getAlphabet' xs
                 getAlphabetSymbol (Trans fs s ts) = s
         getAlphabet' [] = []
 
+isFiniteState :: EpsClosure -> [AState] -> Bool
+isFiniteState (ECls s os) (x:xs) = if x `elem` os then True else isFiniteState (ECls s os) xs
+isFiniteState _ [] = False 
+
+getNewState :: [Transition] -> AState -> EpsClosure
+getNewState t s = ECls s (getEpsClosure t [s])
+
 getEpsClosure :: [Transition] -> [ASymbol] -> [ASymbol]
 getEpsClosure t xs =
-  if xs == nxs then xs
-    else getEpsClosure' t nxs
+  if xs == nxs then nub xs
+    else nub $ getEpsClosure' t nxs
   where
     nxs =  getEpsClosure' t xs
 
-getEpsClosure' :: [Transition]  -> [ASymbol] -> [ASymbol]
+getEpsClosure' :: [Transition]  -> [AState] -> [ASymbol]
 getEpsClosure' (x:xs) ys = if isNothing ns 
                             then getEpsClosure' xs ys 
                             else getEpsClosure' xs [fromJust ns] ++ ys
     where 
         ns = getEpsCls x ys
-        getEpsCls :: Transition -> [ASymbol] -> Maybe ASymbol
+        getEpsCls :: Transition -> [AState] -> Maybe ASymbol
         getEpsCls (Trans fs "" ts) xs = if fs `elem` xs then Just ts else Nothing
         getEpsCls _ _ = Nothing
 getEpsClosure' [] ys = ys

@@ -18,6 +18,14 @@ printTransition :: [Transition] -> String
 printTransition (x:xs) = show x ++ printTransition xs
 printTransition [] = [] 
 
+data EpsClosure = ECls
+    { stateName :: AState
+    , origStates :: [AState]
+    } deriving (Eq)
+
+instance Show EpsClosure where
+    show (ECls sn os) = "\n" ++ show sn ++ "\n" ++ show os ++ "\n"
+
 data FAutomata = FA
     { states :: [AState]
     , alphabet :: [ASymbol]
