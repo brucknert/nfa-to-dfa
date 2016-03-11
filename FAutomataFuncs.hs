@@ -39,6 +39,29 @@ isFiniteState :: EpsClosure -> [AState] -> Bool
 isFiniteState (ECls s os) (x:xs) = if x `elem` os then True else isFiniteState (ECls s os) xs
 isFiniteState _ [] = False 
 
+-- vsechny symboly
+getNewTransition :: FAutomata -> EpsClosure -> [Transition]
+getNewTransition (FA q (a:as) t s f) e = [(Trans   ++ (getNewTransition (FA q (as) t s f) e)
+    where
+        nts = (getNewTransition' t a e)
+getNewTransition (FA _ [] _ _ _) _ = []
+--
+--PROBLEM, MUSIM DYNAMICKY VYTVARET NOVE ECLS DO POLE
+--
+-- vsechny pravidla
+getNewTransition' :: [Transition] -> ASymbol -> EpsClosure -> [AState]
+getNewTransition' (x:xs) a (ECls s os) = 
+    if isNothing tns then ntns 
+        else [fromJust tns] ++ ntns
+    where
+        tns = getNewTransition2 x a os
+        ntns = getNewTransition' xs a (ECls s os)
+
+-- jedno pravidlo, kouknu jestli neco v uzaveru neni na fromState a pres symbol a do toState
+getNewTransition2 :: Transition -> ASymbol -> [AState] -> Maybe AState
+getNewTransition2 (Trans fs s ts) a xs = if fs `elem` xs && s == a then Just ts else Nothing
+
+
 getNewState :: [Transition] -> AState -> EpsClosure
 getNewState t s = ECls s (getEpsClosure t [s])
 
