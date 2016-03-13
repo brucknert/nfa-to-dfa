@@ -25,6 +25,9 @@ data DTransition = DTrans
     , dtoState :: EpsClosure
     } deriving (Eq)
 
+instance Show DTransition where
+  show (DTrans ds s ts) = show ds ++ show s ++ show ts
+
 data DFAutomata = DFA
     { dstates :: [EpsClosure]
     , dalphabet :: [ASymbol]

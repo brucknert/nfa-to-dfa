@@ -92,7 +92,7 @@ getNewTransition ds (FA q (a:as) t s f) e num = if null nts
     else [(DTrans e a xx)]  ++ (getNewTransition ds (FA q (as) t s f) e (num + 1))
     where
         nts = (getNewTransition' t a e)
-        xx = createNewEpsClosure ds num $ sort (getEpsClosure' t nts)
+        xx = createNewEpsClosure ds num $ sort (getEpsClosure t nts)
 getNewTransition _ (FA _ [] _ _ _) _ _ = []
 
 createNewEpsClosure :: [EpsClosure] -> Int -> [AState] -> EpsClosure
@@ -122,7 +122,7 @@ getNewTransition'' (Trans fs s ts) a xs = if fs `elem` xs && s == a then Just ts
 getNewState :: [Transition] -> AState -> EpsClosure
 getNewState t s = ECls 1 (sort (getEpsClosure t [s]))
 
-getEpsClosure :: [Transition] -> [ASymbol] -> [ASymbol]
+getEpsClosure :: [Transition] -> [AState] -> [AState]
 getEpsClosure t xs =
   if xs == nxs then nub xs
     else nub $ getEpsClosure' t nxs
