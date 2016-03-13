@@ -29,11 +29,12 @@ transformFiniteAutomata fa@(FA q a t s f)  = do
 getDFAutomata :: DFAutomata -> FAutomata -> [EpsClosure] -> DFAutomata
 getDFAutomata dfs@(DFA ds da dt dst de) fa@(FA s a t st e) (x:xs) =
   if null newstates
-    then DFA ds da (dt ++ dtrans) dst (getFiniteStates ds e)
+    then getDFAutomata (DFA ds da (dt ++ dtrans) dst (getFiniteStates ds e)) fa xs
     else getDFAutomata (DFA (ds ++ newstates) da (dt ++ dtrans) dst de) fa (xs ++ newstates)
       where
         dtrans = getNewTransition fa x
         newstates = getNewEps ds dtrans
+getDFAutomata dfs _ [] = dfs
 
 getFiniteStates :: [EpsClosure] -> [AState] -> [EpsClosure]
 getFiniteStates (x:xs) ss =
@@ -77,10 +78,11 @@ isFiniteState _ [] = False
 getNewTransition :: FAutomata -> EpsClosure -> [DTransition]
 getNewTransition (FA q (a:as) t s f) e = if null nts
     then (getNewTransition (FA q (as) t s f) e)
-    else [(DTrans e a (ECls "x" (sort nts)))]  ++ (getNewTransition (FA q (as) t s f) e)
+    else [(DTrans e a (ECls "x" (sort (getEpsClosure' t nts))))]  ++ (getNewTransition (FA q (as) t s f) e)
     where
         nts = (getNewTransition' t a e)
 getNewTransition (FA _ [] _ _ _) _ = []
+
 
 -- vsechny pravidla
 getNewTransition' :: [Transition] -> ASymbol -> EpsClosure -> [AState]

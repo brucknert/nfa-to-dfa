@@ -41,7 +41,7 @@ data DFAutomata = DFA
     } deriving (Eq)
 
 instance Show DFAutomata where
-    show (DFA q a t s f) = show q ++ "\n" 
+    show (DFA q a t s f) = printDTransition t ++ "\n" 
     --show (DFA q a t s f) = show q ++ "\n" ++ show s ++ "\n" ++ show f ++ printDTransition t
 
 data EpsClosure = ECls
