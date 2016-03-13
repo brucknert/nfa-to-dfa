@@ -132,7 +132,7 @@ getEpsClosure t xs =
 getEpsClosure' :: [Transition]  -> [AState] -> [ASymbol]
 getEpsClosure' (x:xs) ys = if isNothing ns
                             then getEpsClosure' xs ys
-                            else getEpsClosure' xs [fromJust ns] ++ ys
+                            else getEpsClosure' xs ([fromJust ns] ++ ys)
     where
         ns = getEpsCls x ys
         getEpsCls :: Transition -> [AState] -> Maybe ASymbol

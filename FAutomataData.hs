@@ -34,13 +34,16 @@ data DFAutomata = DFA
     } deriving (Eq)
 
 instance Show DFAutomata where
-    show (DFA q _ t s f) =
+    show (DFA q _ t s f) = --show q
       printECls q ++ "\n" ++ printECls [s] ++ "\n" ++ printECls f ++ printDTransition t
 
 data EpsClosure = ECls
     { stateName :: DState
     , origStates :: [AState]
     } deriving (Eq)
+
+instance Show EpsClosure where
+  show (ECls s ss) = show s ++ show ss
 
 printDTransition :: [DTransition] -> String
 printDTransition [(DTrans ds s ts)] = "\n" ++ printECls [ds] ++ "," ++ id s ++ "," ++ printECls [ts]
