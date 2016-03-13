@@ -18,12 +18,46 @@ dumpFiniteAutomata fa = do
     putStrLn $ show fa
 
 transformFiniteAutomata :: FAutomata -> IO ()
-transformFiniteAutomata (FA q a t s f)  = do
+transformFiniteAutomata fa@(FA q a t s f)  = do
     putStrLn "\ntransforming FA ...\n"
-    let eps = getNewState t s
-    putStrLn $ show eps
-    putStrLn $ show (isFiniteState eps f)
+    let q0 = getNewState t s
+    let dfa = DFA [q0] a [] q0 []
+    let tdfa = getDFAutomata dfa fa [q0]
+    putStrLn $ show tdfa
     return ()
+
+getDFAutomata :: DFAutomata -> FAutomata -> [EpsClosure] -> DFAutomata
+getDFAutomata dfs@(DFA ds da dt dst de) fa@(FA s a t st e) (x:xs) =
+  if null newstates
+    then DFA ds da (dt ++ dtrans) dst (getFiniteStates ds e)
+    else getDFAutomata (DFA (ds ++ newstates) da (dt ++ dtrans) dst de) fa (xs ++ newstates)
+      where
+        dtrans = getNewTransition fa x
+        newstates = getNewEps ds dtrans
+
+getFiniteStates :: [EpsClosure] -> [AState] -> [EpsClosure]
+getFiniteStates (x:xs) ss =
+  if isFiniteState x ss
+    then [x] ++ getFiniteStates xs ss
+    else getFiniteStates xs ss
+getFiniteStates [] _ = []
+
+-- vsechny stavy
+getNewEps :: [EpsClosure] -> [DTransition] -> [EpsClosure]
+getNewEps e (x:xs) = (getNewEps' e x False) ++ (getNewEps e xs)
+getNewEps _ [] = []
+
+-- vsechny stavy
+getNewEps' :: [EpsClosure] -> DTransition -> Bool -> [EpsClosure]
+getNewEps' (x:xs) t False = getNewEps' xs t (getNewEps'' x t)
+getNewEps' _ _ True = []
+getNewEps' [] (DTrans fs s ts) False = [ts]
+
+-- jeden stav
+getNewEps'' :: EpsClosure -> DTransition -> Bool
+getNewEps'' (ECls _ ns) (DTrans _ _ (ECls _ dns)) =
+  if ns == dns then True
+    else False
 
 getAlphabet :: [Transition] -> [ASymbol]
 getAlphabet xs = nub $ getAlphabet' xs
@@ -37,33 +71,34 @@ getAlphabet xs = nub $ getAlphabet' xs
 
 isFiniteState :: EpsClosure -> [AState] -> Bool
 isFiniteState (ECls s os) (x:xs) = if x `elem` os then True else isFiniteState (ECls s os) xs
-isFiniteState _ [] = False 
+isFiniteState _ [] = False
 
 -- vsechny symboly
-getNewTransition :: FAutomata -> EpsClosure -> [Transition]
-getNewTransition (FA q (a:as) t s f) e = [(Trans   ++ (getNewTransition (FA q (as) t s f) e)
+getNewTransition :: FAutomata -> EpsClosure -> [DTransition]
+getNewTransition (FA q (a:as) t s f) e = if null nts
+    then (getNewTransition (FA q (as) t s f) e)
+    else [(DTrans e a (ECls "x" (sort nts)))]  ++ (getNewTransition (FA q (as) t s f) e)
     where
         nts = (getNewTransition' t a e)
 getNewTransition (FA _ [] _ _ _) _ = []
---
---PROBLEM, MUSIM DYNAMICKY VYTVARET NOVE ECLS DO POLE
---
+
 -- vsechny pravidla
 getNewTransition' :: [Transition] -> ASymbol -> EpsClosure -> [AState]
-getNewTransition' (x:xs) a (ECls s os) = 
-    if isNothing tns then ntns 
+getNewTransition' (x:xs) a (ECls s os) =
+    if isNothing tns then ntns
         else [fromJust tns] ++ ntns
     where
-        tns = getNewTransition2 x a os
+        tns = getNewTransition'' x a os
         ntns = getNewTransition' xs a (ECls s os)
+getNewTransition' [] x y = []
 
 -- jedno pravidlo, kouknu jestli neco v uzaveru neni na fromState a pres symbol a do toState
-getNewTransition2 :: Transition -> ASymbol -> [AState] -> Maybe AState
-getNewTransition2 (Trans fs s ts) a xs = if fs `elem` xs && s == a then Just ts else Nothing
+getNewTransition'' :: Transition -> ASymbol -> [AState] -> Maybe AState
+getNewTransition'' (Trans fs s ts) a xs = if fs `elem` xs && s == a then Just ts else Nothing
 
-
+-- Vytvorit epsilonovy uzaver k stavu
 getNewState :: [Transition] -> AState -> EpsClosure
-getNewState t s = ECls s (getEpsClosure t [s])
+getNewState t s = ECls "x" (sort (getEpsClosure t [s]))
 
 getEpsClosure :: [Transition] -> [ASymbol] -> [ASymbol]
 getEpsClosure t xs =
@@ -73,15 +108,15 @@ getEpsClosure t xs =
     nxs =  getEpsClosure' t xs
 
 getEpsClosure' :: [Transition]  -> [AState] -> [ASymbol]
-getEpsClosure' (x:xs) ys = if isNothing ns 
-                            then getEpsClosure' xs ys 
+getEpsClosure' (x:xs) ys = if isNothing ns
+                            then getEpsClosure' xs ys
                             else getEpsClosure' xs [fromJust ns] ++ ys
-    where 
+    where
         ns = getEpsCls x ys
         getEpsCls :: Transition -> [AState] -> Maybe ASymbol
         getEpsCls (Trans fs "" ts) xs = if fs `elem` xs then Just ts else Nothing
         getEpsCls _ _ = Nothing
-getEpsClosure' [] ys = ys
+getEpsClosure' [] ys = sort ys
 
 procLns :: [String] -> FAutomata
 procLns (states:[start]:final:transitions) =
@@ -91,7 +126,7 @@ procLns (states:[start]:final:transitions) =
         getStates = splitOn "," states
         getFinal = splitOn "," final
         rules = map getRule transitions
-        getAlph = delete "" $ getAlphabet rules 
+        getAlph = delete "" $ getAlphabet rules
         getRule rule = getRule' $ splitOn "," rule
         getRule' :: [String] -> Transition
         getRule' [q1,sym,q2] =  Trans q1 sym q2
@@ -99,4 +134,3 @@ procLns (states:[start]:final:transitions) =
 procLns _ = error "bad syntax"
 
 -- vim: expandtab:shiftwidth=4:tabstop=4:softtabstop=0:textwidth=120
-

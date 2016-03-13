@@ -16,7 +16,33 @@ instance Show Transition where
 
 printTransition :: [Transition] -> String
 printTransition (x:xs) = show x ++ printTransition xs
-printTransition [] = [] 
+printTransition [] = []
+
+
+printDTransition :: [DTransition] -> String
+printDTransition (x:xs) = show x ++ printDTransition xs
+printDTransition [] = []
+
+data DTransition = DTrans
+    { dfromState :: EpsClosure
+    , dfromSym :: ASymbol
+    , dtoState :: EpsClosure
+    } deriving (Eq)
+
+instance Show DTransition where
+    show (DTrans aq as af) =  "\n" ++ show aq ++ "," ++ show as ++ "," ++  show af
+
+data DFAutomata = DFA
+    { dstates :: [EpsClosure]
+    , dalphabet :: [ASymbol]
+    , dtrans :: [DTransition]
+    , dstart :: EpsClosure
+    , dend :: [EpsClosure]
+    } deriving (Eq)
+
+instance Show DFAutomata where
+    show (DFA q a t s f) = show q ++ "\n" 
+    --show (DFA q a t s f) = show q ++ "\n" ++ show s ++ "\n" ++ show f ++ printDTransition t
 
 data EpsClosure = ECls
     { stateName :: AState
@@ -35,7 +61,6 @@ data FAutomata = FA
     } deriving (Eq)
 
 instance Show FAutomata where
-    show (FA q a t s f) = id intercalate "," q ++ "\n" ++ id s ++ "\n" ++ id intercalate "," f ++ printTransition t   
+    show (FA q a t s f) = id intercalate "," q ++ "\n" ++ id s ++ "\n" ++ id intercalate "," f ++ printTransition t
 
 -- vim: expandtab:shiftwidth=4:tabstop=4:softtabstop=0:textwidth=120
-
