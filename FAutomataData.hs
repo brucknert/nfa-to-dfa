@@ -4,6 +4,7 @@ import Data.List
 
 type AState = String
 type ASymbol = String
+type DState = Int
 
 data Transition = Trans
     { fromState :: AState
@@ -18,19 +19,11 @@ printTransition :: [Transition] -> String
 printTransition (x:xs) = show x ++ printTransition xs
 printTransition [] = []
 
-
-printDTransition :: [DTransition] -> String
-printDTransition (x:xs) = show x ++ printDTransition xs
-printDTransition [] = []
-
 data DTransition = DTrans
     { dfromState :: EpsClosure
     , dfromSym :: ASymbol
     , dtoState :: EpsClosure
     } deriving (Eq)
-
-instance Show DTransition where
-    show (DTrans aq as af) =  "\n" ++ show aq ++ "," ++ show as ++ "," ++  show af
 
 data DFAutomata = DFA
     { dstates :: [EpsClosure]
@@ -41,16 +34,23 @@ data DFAutomata = DFA
     } deriving (Eq)
 
 instance Show DFAutomata where
-    show (DFA q a t s f) = printDTransition t ++ "\n" 
-    --show (DFA q a t s f) = show q ++ "\n" ++ show s ++ "\n" ++ show f ++ printDTransition t
+    show (DFA q _ t s f) =
+      printECls q ++ "\n" ++ printECls [s] ++ "\n" ++ printECls f ++ printDTransition t
 
 data EpsClosure = ECls
-    { stateName :: AState
+    { stateName :: DState
     , origStates :: [AState]
     } deriving (Eq)
 
-instance Show EpsClosure where
-    show (ECls sn os) = "\n" ++ show sn ++ "\n" ++ show os ++ "\n"
+printDTransition :: [DTransition] -> String
+printDTransition [(DTrans ds s ts)] = "\n" ++ printECls [ds] ++ "," ++ id s ++ "," ++ printECls [ts]
+printDTransition (x:xs) = printDTransition [x] ++ printDTransition xs
+printDTransition [] = []
+
+printECls :: [EpsClosure] -> String
+printECls [(ECls x _)] = show x
+printECls ((ECls x _):xs) = show x ++ "," ++ printECls xs
+printECls [] = []
 
 data FAutomata = FA
     { states :: [AState]
@@ -61,6 +61,6 @@ data FAutomata = FA
     } deriving (Eq)
 
 instance Show FAutomata where
-    show (FA q a t s f) = id intercalate "," q ++ "\n" ++ id s ++ "\n" ++ id intercalate "," f ++ printTransition t
+    show (FA q _ t s f) = id intercalate "," q ++ "\n" ++ id s ++ "\n" ++ id intercalate "," f ++ printTransition t
 
 -- vim: expandtab:shiftwidth=4:tabstop=4:softtabstop=0:textwidth=120
