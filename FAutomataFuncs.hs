@@ -184,7 +184,7 @@ procLns (states:[start]:final:transitions) =
         getRule rule = getRule' $ splitOn "," rule
         getRule' :: [String] -> Transition
         getRule' [q1,sym,q2] =  Trans q1 sym q2
-        getRule' _ = error "bad transition syntax"
+        getRule' x = error "bad transition syntax"
 procLns _ = error "bad syntax"
 
 -- vim: expandtab:shiftwidth=4:tabstop=4:softtabstop=0:textwidth=120

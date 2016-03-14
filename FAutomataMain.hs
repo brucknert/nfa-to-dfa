@@ -8,9 +8,13 @@ Maintainer  :  xbruck02@stud.fit.vutbr.cz
 Stability   :  stable
 Portability :  portable
 
-Program arguments: options [input_file]
+[@Example program run::@]
+
+  -./FAutomataMain options [input_file]
 
 [@options:@]
+
+Parameters are mutually exclusive and either one  of them must be specified.
 
   -\-i   - prints input Finite Automata 'FAutomata'
 
