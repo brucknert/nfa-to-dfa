@@ -23,16 +23,21 @@ import Data.List.Split
 import Data.Maybe
 import FAutomataData
 
-getFiniteAutomata :: String -> IO FAutomata
+-- | Parses program's input Finite Automata 'FAutomata'.
+getFiniteAutomata :: String         -- ^ Program's input content
+                  -> IO FAutomata   -- ^ Return Finite Automata 'FAutomata'
 getFiniteAutomata content = do
     let lns = lines content
     let fa = procLns lns
     return fa
 
-dumpFiniteAutomata :: FAutomata -> IO ()
+-- | Prints program's input Finite Automata 'FAutomata' in desirable format.
+dumpFiniteAutomata  :: FAutomata    -- ^ Program's input Finite Automata 'FAutomata'
+                    -> IO ()        -- ^ Output Finite Automata
 dumpFiniteAutomata fa = do
     putStrLn $ show fa
 
+-- | Transforms Finite Automata 'FAutomata' to Deterministic Finite Automata 'DFAutomata' and prints it.
 transformFiniteAutomata :: FAutomata -> IO ()
 transformFiniteAutomata fa@(FA q a t s f)  = do
     let q0 = getInitialState t s
