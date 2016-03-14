@@ -1,9 +1,19 @@
-module FAutomataFuncs(getFiniteAutomata, dumpFiniteAutomata, transformFiniteAutomata) where
+{-|
+Module      : FAutomataFuncs
+Description : Functions
+Course      : FLP - Functional and Logic Programming
+Author      : Tomas Bruckner, xbruck02@stud.fit.vutbr.cz
+Date        : 2016-03-14
+-}
+module FAutomataFuncs(
+  getFiniteAutomata
+  , dumpFiniteAutomata
+  , transformFiniteAutomata
+) where
 
 import System.IO
 import Data.List
 import Data.List.Split
-import Data.String
 import Data.Maybe
 import FAutomataData
 
@@ -19,7 +29,7 @@ dumpFiniteAutomata fa = do
 
 transformFiniteAutomata :: FAutomata -> IO ()
 transformFiniteAutomata fa@(FA q a t s f)  = do
-    let q0 = getNewState t s
+    let q0 = getInitialState t s
     let dfa = DFA [q0] a [] q0 []
     let tdfa = getDFAutomata dfa fa [q0]
     putStrLn $ show tdfa
@@ -89,20 +99,31 @@ isFiniteState _ [] = False
 getNewTransition :: [EpsClosure] -> FAutomata -> EpsClosure -> Int -> [DTransition]
 getNewTransition ds (FA q (a:as) t s f) e num = if null nts
     then (getNewTransition ds (FA q (as) t s f) e num)
-    else [(DTrans e a xx)]  ++ (getNewTransition ds (FA q (as) t s f) e (num + 1))
+    else [(DTrans e a xx)]  ++ (getNewTransition add (FA q (as) t s f) e (getHighestNum add 1))
     where
         nts = (getNewTransition' t a e)
         xx = createNewEpsClosure ds num $ sort (getEpsClosure t nts)
+        add = addEpsClosure ds xx
 getNewTransition _ (FA _ [] _ _ _) _ _ = []
+
+addEpsClosure :: [EpsClosure] -> EpsClosure -> [EpsClosure]
+addEpsClosure [] eps = [eps]
+addEpsClosure es eps = es ++ (addEpsClosure' es eps)
+  where
+    addEpsClosure' :: [EpsClosure] -> EpsClosure -> [EpsClosure]
+    addEpsClosure' (x:xs) eps@(ECls _ e) = if isNewEpsClosure x e
+      then  addEpsClosure' xs eps
+      else []
+    addEpsClosure' [] eps = [eps]
 
 createNewEpsClosure :: [EpsClosure] -> Int -> [AState] -> EpsClosure
 createNewEpsClosure [] num ss = (ECls num ss)
 createNewEpsClosure (x:xs) num ss = if isNewEpsClosure x ss
   then createNewEpsClosure xs num ss
   else x
-  where
-    isNewEpsClosure :: EpsClosure -> [AState] -> Bool
-    isNewEpsClosure (ECls _ ss) as = (sort ss) /= (sort as)
+
+isNewEpsClosure :: EpsClosure -> [AState] -> Bool
+isNewEpsClosure (ECls _ ss) as = (sort ss) /= (sort as)
 
 -- vsechny pravidla
 getNewTransition' :: [Transition] -> ASymbol -> EpsClosure -> [AState]
@@ -119,8 +140,8 @@ getNewTransition'' :: Transition -> ASymbol -> [AState] -> Maybe AState
 getNewTransition'' (Trans fs s ts) a xs = if fs `elem` xs && s == a then Just ts else Nothing
 
 -- Vytvorit epsilonovy uzaver k stavu
-getNewState :: [Transition] -> AState -> EpsClosure
-getNewState t s = ECls 1 (sort (getEpsClosure t [s]))
+getInitialState :: [Transition] -> AState -> EpsClosure
+getInitialState t s = ECls 1 (sort (getEpsClosure t [s]))
 
 getEpsClosure :: [Transition] -> [AState] -> [AState]
 getEpsClosure t xs =
@@ -148,7 +169,7 @@ procLns (states:[start]:final:transitions) =
         getStates = splitOn "," states
         getFinal = splitOn "," final
         rules = map getRule transitions
-        getAlph = delete "" $ getAlphabet rules
+        getAlph = delete "" $ sort (getAlphabet rules)
         getRule rule = getRule' $ splitOn "," rule
         getRule' :: [String] -> Transition
         getRule' [q1,sym,q2] =  Trans q1 sym q2
