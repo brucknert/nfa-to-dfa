@@ -1,10 +1,26 @@
-{-|
-Module      : FAutomataMain
-Description : Main
-Course      : FLP - Functional and Logic Programming
-Author      : Tomas Bruckner, xbruck02@stud.fit.vutbr.cz
-Date        : 2016-03-14
+{- |
+Module      :  FAutomataMain
+Description :  Starting point of the program.
+Copyright   :  (c) Tomas Bruckner 2016
+License     :  MIT
+
+Maintainer  :  xbruck02@stud.fit.vutbr.cz
+Stability   :  stable
+Portability :  portable
+
+Program arguments: options [input_file]
+
+[@options:@]
+
+  -\-i   - prints input Finite Automata 'FAutomata'
+
+  -\-t  - transforms Finite Automata 'FAutomata' with epsilon transitions to Deterministic Finite Automata 'DFAutomata'
+
+[@input_file:@]
+
+  -stdin is used if name of the file is not provided
 -}
+
 module Main(main) where
 
 import System.IO
@@ -12,7 +28,10 @@ import System.Environment
 import FAutomataData
 import FAutomataFuncs
 
-main :: IO ()
+{-|
+Starting point of the program.
+-}
+main :: IO ()   -- ^ Program output
 main = do
     args <- getArgs
     let (transform, inFile) = procArgs args
@@ -28,11 +47,16 @@ main = do
         else dumpFiniteAutomata fa
     return ()
 
-procArgs :: [String] -> (Bool,String)
+{-|
+Processes program arguments.
+Returns program input file or stdin and information if program should dump or transform Finite Automata.
+-}
+procArgs  :: [String]       -- ^ Progam arguments
+          -> (Bool,String)  -- ^ Bool represents -i/-t option, String input_file
 procArgs [x]
     | x=="-i" = (False, "stdin")
     | x=="-t" = (True, "stdin")
-    | otherwise = error "unknown arguments"
+    | otherwise = error "unknown argument"
 procArgs [x,y]
     | x=="-i" = (False, y)
     | x=="-t" = (True, y)

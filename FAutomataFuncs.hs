@@ -1,10 +1,16 @@
-{-|
-Module      : FAutomataFuncs
-Description : Functions
-Course      : FLP - Functional and Logic Programming
-Author      : Tomas Bruckner, xbruck02@stud.fit.vutbr.cz
-Date        : 2016-03-14
+{- |
+Module      :  FAutomataFuncs
+Description :  Functions.
+Copyright   :  (c) Tomas Bruckner 2016
+License     :  MIT
+
+Maintainer  :  xbruck02@stud.fit.vutbr.cz
+Stability   :  stable
+Portability :  portable
+
+Functions.
 -}
+
 module FAutomataFuncs(
   getFiniteAutomata
   , dumpFiniteAutomata
