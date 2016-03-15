@@ -46,77 +46,98 @@ transformFiniteAutomata fa@(FA q a t s f)  = do
     putStrLn $ show tdfa
     return ()
 
+{-|
+Transforms empty Deterministic Finite Automata 'DFAutomata' from Finite Automata 'FAutomata'.
+Returns transformed transformed Deterministic Finite Automata 'DFAutomata'.
+-}
 getDFAutomata :: DFAutomata -> FAutomata -> [EpsClosure] -> DFAutomata
 getDFAutomata dfs@(DFA ds da dt dst de) fa@(FA s a t st e) (x:xs) =
   if null newstates
     then getDFAutomata (DFA ds da (dt ++ dtrans) dst (getFiniteStates ds e)) fa xs
     else getDFAutomata (DFA (ds ++ newstates) da (dt ++ dtrans) dst de) fa (xs ++ newstates)
       where
-        dtrans = getNewTransition ds fa x (getHighestNum ds 0)
+        dtrans = getNewTransition ds fa x (getNextIndex ds 0)
         newstates = getNewEps ds dtrans
 getDFAutomata dfs _ [] = dfs
 
-getHighestNum :: [EpsClosure] -> Int -> Int
-getHighestNum (x:xs) num =
+{-|
+Parses highest index from array of states 'EpsClosure' represented as 'DState'.
+Returns next free index.
+-}
+getNextIndex  :: [EpsClosure]     -- ^ States of Deterministic Finite Automata 'DFAutomata'
+              -> Int              -- ^ Starting index for specifying minimum index
+              -> Int              -- ^ Next free index
+getNextIndex (x:xs) num =
   if num > n
-    then getHighestNum xs num
-    else getHighestNum xs n
+    then getNextIndex xs num
+    else getNextIndex xs n
     where
-      n = getHighestNum' x
-getHighestNum [] num = num + 1
+      n = getNextIndex' x
+getNextIndex [] num = num + 1
 
-getHighestNum' :: EpsClosure -> Int
-getHighestNum' (ECls n _) = n
+-- | Returns index of single state of Deterministic Finite Automata 'DFAutomata'.
+getNextIndex' :: EpsClosure   -- ^ Sinle state of Deterministic Finite Automata 'DFAutomata'
+              -> Int          -- ^ Returns state index
+getNextIndex' (ECls n _) = n
 
-getFiniteStates :: [EpsClosure] -> [AState] -> [EpsClosure]
+-- | Identifies finite states in Deterministic Finite Automata 'DFAutomata'.
+getFiniteStates :: [EpsClosure]   -- ^ States of Deterministic Finite Automata 'DFAutomata'
+                -> [AState]       -- ^ Finite states of Finite Automata 'FAutomata'
+                -> [EpsClosure]   -- ^ Finite states of Deterministic Finite Automata 'DFAutomata'
 getFiniteStates (x:xs) ss =
   if isFiniteState x ss
     then [x] ++ getFiniteStates xs ss
     else getFiniteStates xs ss
 getFiniteStates [] _ = []
 
--- vsechny stavy
+-- |
 getNewEps :: [EpsClosure] -> [DTransition] -> [EpsClosure]
 getNewEps e (x:xs) = (getNewEps' e x False) ++ (getNewEps e xs)
 getNewEps _ [] = []
 
--- vsechny stavy
+-- |
 getNewEps' :: [EpsClosure] -> DTransition -> Bool -> [EpsClosure]
 getNewEps' (x:xs) t False = getNewEps' xs t (getNewEps'' x t)
 getNewEps' _ _ True = []
 getNewEps' [] (DTrans fs s ts) False = [ts]
 
--- jeden stav
+-- |
 getNewEps'' :: EpsClosure -> DTransition -> Bool
 getNewEps'' (ECls _ ns) (DTrans _ _ (ECls _ dns)) =
-  if ns == dns then True
-    else False
+  if ns == dns then True else False
 
-getAlphabet :: [Transition] -> [ASymbol]
+-- | Parses Finite Automata's alphabet from array of 'Transition' and removes duplicity.
+getAlphabet :: [Transition]   -- ^ Transitions of Finite Automata 'FAutomata'
+            -> [ASymbol]      -- ^ Finite Automata's alphabet
 getAlphabet xs = nub $ getAlphabet' xs
-    where
-        getAlphabet' :: [Transition] -> [ASymbol]
-        getAlphabet' (x:xs) = getAlphabetSymbol x : getAlphabet' xs
-            where
-                getAlphabetSymbol :: Transition -> ASymbol
-                getAlphabetSymbol (Trans fs s ts) = s
-        getAlphabet' [] = []
 
+-- | Parses Finite Automata's alphabet from array of 'Transition'
+getAlphabet'  :: [Transition]   -- ^
+              -> [ASymbol]      -- ^
+getAlphabet' (x:xs) = getAlphabetSymbol x : getAlphabet' xs
+getAlphabet' [] = []
+
+-- |
+getAlphabetSymbol :: Transition -> ASymbol
+getAlphabetSymbol (Trans fs s ts) = s
+
+-- |
 isFiniteState :: EpsClosure -> [AState] -> Bool
 isFiniteState (ECls s os) (x:xs) = if x `elem` os then True else isFiniteState (ECls s os) xs
 isFiniteState _ [] = False
 
--- vsechny symboly
+-- |
 getNewTransition :: [EpsClosure] -> FAutomata -> EpsClosure -> Int -> [DTransition]
 getNewTransition ds (FA q (a:as) t s f) e num = if null nts
     then (getNewTransition ds (FA q (as) t s f) e num)
-    else [(DTrans e a xx)]  ++ (getNewTransition add (FA q (as) t s f) e (getHighestNum add 1))
+    else [(DTrans e a xx)]  ++ (getNewTransition add (FA q (as) t s f) e (getNextIndex add 1))
     where
         nts = (getNewTransition' t a e)
         xx = createNewEpsClosure ds num $ sort (getEpsClosure t nts)
         add = addEpsClosure ds xx
 getNewTransition _ (FA _ [] _ _ _) _ _ = []
 
+-- |
 addEpsClosure :: [EpsClosure] -> EpsClosure -> [EpsClosure]
 addEpsClosure [] eps = [eps]
 addEpsClosure es eps = es ++ (addEpsClosure' es eps)
@@ -127,16 +148,18 @@ addEpsClosure es eps = es ++ (addEpsClosure' es eps)
       else []
     addEpsClosure' [] eps = [eps]
 
+-- |
 createNewEpsClosure :: [EpsClosure] -> Int -> [AState] -> EpsClosure
 createNewEpsClosure [] num ss = (ECls num ss)
 createNewEpsClosure (x:xs) num ss = if isNewEpsClosure x ss
   then createNewEpsClosure xs num ss
   else x
 
+-- |
 isNewEpsClosure :: EpsClosure -> [AState] -> Bool
 isNewEpsClosure (ECls _ ss) as = (sort ss) /= (sort as)
 
--- vsechny pravidla
+-- |
 getNewTransition' :: [Transition] -> ASymbol -> EpsClosure -> [AState]
 getNewTransition' (x:xs) a (ECls s os) =
     if isNothing tns then ntns
@@ -146,14 +169,15 @@ getNewTransition' (x:xs) a (ECls s os) =
         ntns = getNewTransition' xs a (ECls s os)
 getNewTransition' [] x y = []
 
--- jedno pravidlo, kouknu jestli neco v uzaveru neni na fromState a pres symbol a do toState
+-- |
 getNewTransition'' :: Transition -> ASymbol -> [AState] -> Maybe AState
 getNewTransition'' (Trans fs s ts) a xs = if fs `elem` xs && s == a then Just ts else Nothing
 
--- Vytvorit epsilonovy uzaver k stavu
+-- |
 getInitialState :: [Transition] -> AState -> EpsClosure
 getInitialState t s = ECls 1 (sort (getEpsClosure t [s]))
 
+-- |
 getEpsClosure :: [Transition] -> [AState] -> [AState]
 getEpsClosure t xs =
   if xs == nxs then nub xs
@@ -161,6 +185,7 @@ getEpsClosure t xs =
   where
     nxs =  getEpsClosure' t xs
 
+-- |
 getEpsClosure' :: [Transition]  -> [AState] -> [ASymbol]
 getEpsClosure' (x:xs) ys = if isNothing ns
                             then getEpsClosure' xs ys
@@ -172,7 +197,9 @@ getEpsClosure' (x:xs) ys = if isNothing ns
         getEpsCls _ _ = Nothing
 getEpsClosure' [] ys = sort ys
 
-procLns :: [String] -> FAutomata
+-- | Parses program input and returns Finite Automata 'FAutomata'.
+procLns :: [String]     -- ^ Lines of program's input
+        -> FAutomata    -- ^ Parsed Finite Automata 'FAutomata'
 procLns (states:[start]:final:transitions) =
     if null transitions then error "no transitions"
     else FA getStates getAlph rules [start] getFinal

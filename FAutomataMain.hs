@@ -32,9 +32,7 @@ import System.Environment
 import FAutomataData
 import FAutomataFuncs
 
-{-|
-Starting point of the program.
--}
+-- |Starting point of the program.
 main :: IO ()   -- ^ Program output
 main = do
     args <- getArgs
