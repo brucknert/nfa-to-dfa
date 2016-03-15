@@ -217,7 +217,7 @@ getOrigStates' (x:xs) ys =
     if null (sym x) && fromState x `elem` ys && (not $ toState x `elem` ys)
     then getOrigStates' xs $ (toState x) : ys
     else getOrigStates' xs ys
-getOrigStates' [] ys = sort ys
+getOrigStates' [] ys = sort $ nub ys
 
 -- | Identifies finite states in DFA 'DFAutomata'.
 getFiniteStates :: [EpsClosure]   -- ^ States of DFA 'DFAutomata'
