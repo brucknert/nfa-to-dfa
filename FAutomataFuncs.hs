@@ -8,7 +8,7 @@ Maintainer  :  xbruck02@stud.fit.vutbr.cz
 Stability   :  stable
 Portability :  portable
 
-Functions.
+More info about transformation algorithm is in the README.
 -}
 
 module FAutomataFuncs(
@@ -23,23 +23,49 @@ import Data.List.Split
 import Data.Maybe
 import FAutomataData
 
--- | Parses program's input Finite Automata 'FAutomata'.
+-- | Parses program's input FA 'FAutomata'.
 getFiniteAutomata :: String         -- ^ Program's input content
-                  -> IO FAutomata   -- ^ Return Finite Automata 'FAutomata'
+                  -> IO FAutomata   -- ^ Return FA 'FAutomata'
 getFiniteAutomata content = do
     let lns = lines content
     let fa = procLns lns
     return fa
 
--- | Prints program's input Finite Automata 'FAutomata' in desirable format.
-dumpFiniteAutomata  :: FAutomata    -- ^ Program's input Finite Automata 'FAutomata'
-                    -> IO ()        -- ^ Output Finite Automata
+-- | Parses program input and returns FA 'FAutomata'.
+procLns :: [String]     -- ^ Lines of program's input
+        -> FAutomata    -- ^ Parsed FA 'FAutomata'
+procLns (states:[initial]:final:transitions) =
+    if null transitions then error "no transitions"
+    else FA getStates getAlph rules [initial] getFinal
+    where
+        getStates = splitOn "," states
+        getFinal = splitOn "," final
+        rules = map getRule transitions
+        getAlph = getAlphabet rules
+        getRule rule = getRule' $ splitOn "," rule
+        getRule' :: [String] -> Transition
+        getRule' [q1,sym,q2] =  Trans q1 sym q2
+        getRule' x = error "bad transition syntax"
+procLns _ = error "bad syntax"
+
+-- | Parses FA's alphabet from array of 'Transition'.
+getAlphabet :: [Transition]   -- ^ Transitions of FA 'FAutomata'
+            -> [ASymbol]      -- ^ FA's alphabet
+getAlphabet xs = sort $ delete "" $ nub $ getAlphabet' xs
+    where
+        getAlphabet' :: [Transition] -> [ASymbol]
+        getAlphabet' (x:xs) = sym x : getAlphabet' xs
+        getAlphabet' [] = []
+
+-- | Prints program's input FA 'FAutomata' in desirable format.
+dumpFiniteAutomata  :: FAutomata    -- ^ Program's input FA 'FAutomata'
+                    -> IO ()        -- ^ Output FA
 dumpFiniteAutomata fa = do
     putStrLn $ show fa
 
--- | Transforms Finite Automata 'FAutomata' to Deterministic Finite Automata 'DFAutomata' and prints it.
-transformFiniteAutomata :: FAutomata  -- ^ Finite Automata that should be trasnformed
-                        -> IO ()      -- ^ Output Deterministic Finite Automata
+-- | Transforms FA 'FAutomata' to DFA 'DFAutomata' and prints it.
+transformFiniteAutomata :: FAutomata  -- ^ FA that should be trasnformed
+                        -> IO ()      -- ^ Output DFA
 transformFiniteAutomata fa@(FA q a t s f)  = do
     let q0 = getInitialState t s
     let dfa = DFA [q0] a [] q0 []
@@ -48,8 +74,8 @@ transformFiniteAutomata fa@(FA q a t s f)  = do
     return ()
 
 {-|
-Transforms empty Deterministic Finite Automata 'DFAutomata' from Finite Automata 'FAutomata'.
-Returns transformed transformed Deterministic Finite Automata 'DFAutomata'.
+Transforms empty DFA 'DFAutomata' from FA 'FAutomata'.
+Returns transformed transformed DFA 'DFAutomata'.
 Function takes array of unprocessed states and generates new transitions for DFA.
 If a new transition is to a new state (not yet in DFA), than this state is add to the states
 of the DFA and to the array of unprocessed states of DFA.
@@ -64,80 +90,64 @@ getDFAutomata dfa@(DFA ds da dt dst de) fa (x:xs) =
     then getDFAutomata (DFA ds da (dt ++ dtrans) dst (getFiniteStates ds $ finals fa)) fa xs
     else getDFAutomata (DFA (ds ++ newstates) da (dt ++ dtrans) dst de) fa (xs ++ newstates)
     where
-      dtrans = getNewTransition ds (trans fa) (alphabet fa) x (getNextIndex ds 0)
+      dtrans = getNewDTransitions ds (trans fa) (alphabet fa) x (getNextIndex ds 0)
       newstates = getNewEClsFromDTrans ds dtrans
 getDFAutomata dfa _ [] = dfa
 
--- | Parses Finite Automata's alphabet from array of 'Transition' and removes duplicity.
-getAlphabet :: [Transition]   -- ^ Transitions of Finite Automata 'FAutomata'
-            -> [ASymbol]      -- ^ Finite Automata's alphabet
-getAlphabet (x:xs) = nub $ sym x : getAlphabet xs
-getAlphabet [] = []
-
--- | Parses initial state for Deterministic Finite Automata 'DFAutomata' from array of 'Transition'.
-getInitialState :: [Transition]   -- ^ Transitions of Finite Automata 'FAutomata'
-                -> AState         -- ^ Initial state of Finite Automata 'FAutomata'
-                -> EpsClosure     -- ^ Initial state of Deterministic Finite Automata 'DFAutomata'
+-- | Parses initial state for DFA 'DFAutomata' from array of 'Transition'.
+getInitialState :: [Transition]   -- ^ Transitions of FA 'FAutomata'
+                -> AState         -- ^ Initial state of FA 'FAutomata'
+                -> EpsClosure     -- ^ Initial state of DFA 'DFAutomata'
 getInitialState t s = ECls 1 $ sort $ getOrigStates t [s]
 
--- |
-getNewTransition    :: [EpsClosure]
-                    -> [Transition]
-                    -> [ASymbol]
-                    -> EpsClosure
-                    -> Int
-                    -> [DTransition]
-getNewTransition ds t (a:as) eps num =
+{-|
+Creates new transitions 'DTransition' from specified state 'EpsClosure' for every symbol
+from Deterministic Finite Automat's alphabet. If dtoState of transition is new, it creates
+new 'EpsClosure'.
+-}
+getNewDTransitions :: [EpsClosure]    -- ^ All states of DFA
+                -> [Transition]       -- ^ All transitions of FA 'FAutomata'
+                -> [ASymbol]          -- ^ Alphabet symbols of DFA to process
+                -> EpsClosure         -- ^ fromState in 'DTransition'
+                -> Int                -- ^ Next free index for new state of DFA
+                -> [DTransition]      -- ^ New transitions for DFA
+getNewDTransitions ds t (a:as) eps num =
     if null nts
-    then (getNewTransition ds t (as) eps num)
-    else (DTrans eps a newState) : (getNewTransition newECls t (as) eps (getNextIndex newECls 1))
+    then getNewDTransitions ds t (as) eps num
+    else dtrans : nextDTrans
     where
-        nts = getNewTransition' t a eps
+        nts = getNewDTransitions' t a eps
         newState = createEpsClosure ds num $ sort (getOrigStates t nts)
         newECls = nub $ newState : ds
-getNewTransition _ _ [] _ _ = []
+        dtrans = DTrans eps a newState
+        nextDTrans = getNewDTransitions newECls t (as) eps nextIndex
+        nextIndex = getNextIndex newECls 1
+getNewDTransitions _ _ [] _ _ = []
 
--- |
-getNewTransition'   :: [Transition]
-                    -> ASymbol
-                    -> EpsClosure
-                    -> [AState]
-getNewTransition' (x:xs) a eps =
+-- | Creates origStates for single dtoState in single 'DTransition' with symbol specified in the parameters.
+getNewDTransitions' :: [Transition]     -- ^ All transitions of FA 'FAutomata'
+                -> ASymbol              -- ^ Single symbol of DFA 'DFAutomata'
+                -> EpsClosure           -- ^ fromState in 'DTransition'
+                -> [AState]             -- ^ origStates for dtoState in 'DTransition'
+getNewDTransitions' (x:xs) a eps =
     if isElem then (toState x) : states
     else states
     where
         isElem = (fromState x) `elem` origStates eps && a == sym x
-        states = getNewTransition' xs a eps
-getNewTransition' [] _ _ = []
+        states = getNewDTransitions' xs a eps
+getNewDTransitions' [] _ _ = []
 
 {-|
 Parses highest index from array of states 'EpsClosure' represented as 'DState'.
 Returns next free index.
 -}
-getNextIndex  :: [EpsClosure]     -- ^ States of Deterministic Finite Automata 'DFAutomata'
+getNextIndex  :: [EpsClosure]     -- ^ States of DFA 'DFAutomata'
               -> Int              -- ^ Starting index for specifying minimum index
               -> Int              -- ^ Next free index
 getNextIndex (x:xs) num = getNextIndex xs $ maximum [(stateIndex x),num]
 getNextIndex [] num = num + 1
 
--- | Identifies finite states in Deterministic Finite Automata 'DFAutomata'.
-getFiniteStates :: [EpsClosure]   -- ^ States of Deterministic Finite Automata 'DFAutomata'
-                -> [AState]       -- ^ Finite states of Finite Automata 'FAutomata'
-                -> [EpsClosure]   -- ^ Finite states of Deterministic Finite Automata 'DFAutomata'
-getFiniteStates [] _ = []
-getFiniteStates xs ss = filter (isFinalState') xs
-    where
-        isFinalState' = isFinalState ss
-
--- | Decides whether a state of Deterministic Finite Automata 'DFAutomata' is final or not.
-isFinalState :: [AState]       -- ^ Final states of Finite Automata 'FAutomata'
-              -> EpsClosure     -- ^ State of Deterministic Finite Automata 'DFAutomata'
-              -> Bool           -- ^ True if EpsClosure is finite state, False otherwise
-isFinalState (x:xs) eps  =
-    if x `elem` origStates eps then True else isFinalState xs eps
-isFinalState [] _ = False
-
--- | Parses new states of Deterministic Finite Automata 'DFAutomata' from array of 'DTransition'.
+-- | Parses new states of DFA 'DFAutomata' from array of 'DTransition'.
 getNewEClsFromDTrans :: [EpsClosure]    -- ^ All states of DFA
                     -> [DTransition]    -- ^ Transitions of DFA
                     -> [EpsClosure]     -- ^ New states of DFA
@@ -145,7 +155,7 @@ getNewEClsFromDTrans e (x:xs) =
     (getNewEClsFromDTrans' e x False) ++ (getNewEClsFromDTrans e xs)
 getNewEClsFromDTrans _ [] = []
 
--- | Parses new states of Deterministic Finite Automata 'DFAutomata' from single 'DTransition'.
+-- | Parses new states of DFA 'DFAutomata' from single 'DTransition'.
 getNewEClsFromDTrans' :: [EpsClosure]   -- ^ All states of DFA
                     -> DTransition      -- ^ Single transition
                     -> Bool             -- ^ Flag if new state was found
@@ -158,13 +168,13 @@ getNewEClsFromDTrans' _ _ True = []
 getNewEClsFromDTrans' [] t False = [(dtoState t )]
 
 {-|
-Checks if a state of Deterministic Finite Automata 'DFAutomata' with
+Checks if a state of DFA 'DFAutomata' with
 same origStates exists. If that state doesn't exist, creates a new one.
 Otherwise returns existing state. Works similar to Singleton pattern.
 -}
 createEpsClosure :: [EpsClosure]   -- ^ All states of DFA
                 -> Int            -- ^ Potential index of the new state
-                -> [AState]       -- ^ States in original Finite Automata 'FAutomata'
+                -> [AState]       -- ^ States in original FA 'FAutomata'
                 -> EpsClosure     -- ^ State of the DFA with needed origStates
 createEpsClosure [] num ss = (ECls num ss)
 createEpsClosure (x:xs) num ss =
@@ -173,7 +183,7 @@ createEpsClosure (x:xs) num ss =
   else createEpsClosure xs num ss
 
 -- | Decides whether 'AState' array is equal to origStates of 'EpsClosure'.
-isEqEpsClosure  :: EpsClosure     -- ^ Single state of Deterministic Finite Automata 'DFAutomata'
+isEqEpsClosure  :: EpsClosure     -- ^ Single state of DFA 'DFAutomata'
                 -> [AState]       -- ^ Array of 'AState'
                 -> Bool           -- ^ True if equal, False otherwise
 isEqEpsClosure eps as = (sort $ origStates eps) == sort as
@@ -185,7 +195,7 @@ any transition in format x,,y where x belongs to states already
 in origStates and y is a new state, that will be added to origStates.
 Algorithm stops when we didn't add new state to origStates.
 -}
-getOrigStates :: [Transition]   -- ^ Transitions of Finite Automata 'FAutomata'
+getOrigStates :: [Transition]   -- ^ Transitions of FA 'FAutomata'
               -> [AState]       -- ^ States already in origStates
               -> [AState]       -- ^ origStates for 'EpsClosure'
 getOrigStates t xs =
@@ -195,31 +205,35 @@ getOrigStates t xs =
     where
         nxs = getOrigStates' t xs
 
--- | Creates
-getOrigStates'  :: [Transition]
-                -> [AState]
-                -> [AState]
+{-|
+Iterates every 'Transition'. If epsilon trasition is found, checks if fromState
+is in origStates. If it is and toState is not in origStates, then toState is added
+to origStates.
+-}
+getOrigStates'  :: [Transition]     -- ^ Transitions of FA 'FAutomata'
+                -> [AState]         -- ^ States already in origStates
+                -> [AState]         -- ^ origStates for 'EpsClosure'
 getOrigStates' (x:xs) ys =
-    if null (sym x) && fromState x `elem` ys
+    if null (sym x) && fromState x `elem` ys && (not $ toState x `elem` ys)
     then getOrigStates' xs $ (toState x) : ys
     else getOrigStates' xs ys
-getOrigStates' [] ys = nub $ sort ys
+getOrigStates' [] ys = sort ys
 
--- | Parses program input and returns Finite Automata 'FAutomata'.
-procLns :: [String]     -- ^ Lines of program's input
-        -> FAutomata    -- ^ Parsed Finite Automata 'FAutomata'
-procLns (states:[initial]:final:transitions) =
-    if null transitions then error "no transitions"
-    else FA getStates getAlph rules [initial] getFinal
+-- | Identifies finite states in DFA 'DFAutomata'.
+getFiniteStates :: [EpsClosure]   -- ^ States of DFA 'DFAutomata'
+                -> [AState]       -- ^ Finite states of FA 'FAutomata'
+                -> [EpsClosure]   -- ^ Finite states of DFA 'DFAutomata'
+getFiniteStates [] _ = []
+getFiniteStates xs ss = filter (isFinalState') xs
     where
-        getStates = splitOn "," states
-        getFinal = splitOn "," final
-        rules = map getRule transitions
-        getAlph = delete "" $ sort (getAlphabet rules)
-        getRule rule = getRule' $ splitOn "," rule
-        getRule' :: [String] -> Transition
-        getRule' [q1,sym,q2] =  Trans q1 sym q2
-        getRule' x = error "bad transition syntax"
-procLns _ = error "bad syntax"
+        isFinalState' = isFinalState ss
+
+-- | Decides whether a state of DFA 'DFAutomata' is final or not.
+isFinalState :: [AState]       -- ^ Final states of FA 'FAutomata'
+              -> EpsClosure     -- ^ State of DFA 'DFAutomata'
+              -> Bool           -- ^ True if EpsClosure is finite state, False otherwise
+isFinalState (x:xs) eps  =
+    if x `elem` origStates eps then True else isFinalState xs eps
+isFinalState [] _ = False
 
 -- vim: expandtab:shiftwidth=4:tabstop=4:softtabstop=0:textwidth=120
