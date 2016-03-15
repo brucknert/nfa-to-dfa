@@ -12,9 +12,9 @@ Functions.
 -}
 
 module FAutomataFuncs(
-  getFiniteAutomata
-  , dumpFiniteAutomata
-  , transformFiniteAutomata
+    getFiniteAutomata
+    , dumpFiniteAutomata
+    , transformFiniteAutomata
 ) where
 
 import System.IO
@@ -38,7 +38,8 @@ dumpFiniteAutomata fa = do
     putStrLn $ show fa
 
 -- | Transforms Finite Automata 'FAutomata' to Deterministic Finite Automata 'DFAutomata' and prints it.
-transformFiniteAutomata :: FAutomata -> IO ()
+transformFiniteAutomata :: FAutomata  -- ^ Finite Automata that should be trasnformed
+                        -> IO ()      -- ^ Output Deterministic Finite Automata
 transformFiniteAutomata fa@(FA q a t s f)  = do
     let q0 = getInitialState t s
     let dfa = DFA [q0] a [] q0 []
@@ -49,16 +50,23 @@ transformFiniteAutomata fa@(FA q a t s f)  = do
 {-|
 Transforms empty Deterministic Finite Automata 'DFAutomata' from Finite Automata 'FAutomata'.
 Returns transformed transformed Deterministic Finite Automata 'DFAutomata'.
+Function takes array of unprocessed states and generates new transitions for DFA.
+If a new transition is to a new state (not yet in DFA), than this state is add to the states
+of the DFA and to the array of unprocessed states of DFA.
+Finishes when there are no longer any unprocessed states of DFA (every transition is generated).
 -}
-getDFAutomata :: DFAutomata -> FAutomata -> [EpsClosure] -> DFAutomata
-getDFAutomata dfs@(DFA ds da dt dst de) fa@(FA s a t st e) (x:xs) =
-  if null newstates
-    then getDFAutomata (DFA ds da (dt ++ dtrans) dst (getFiniteStates ds e)) fa xs
+getDFAutomata :: DFAutomata     -- ^ DFA to process
+              -> FAutomata      -- ^ Original FA
+              -> [EpsClosure]   -- ^ Unprocessed states of DFA
+              -> DFAutomata     -- ^ Processed DFA
+getDFAutomata dfa@(DFA ds da dt dst de) fa (x:xs) =
+    if null newstates
+    then getDFAutomata (DFA ds da (dt ++ dtrans) dst (getFiniteStates ds $ finals fa)) fa xs
     else getDFAutomata (DFA (ds ++ newstates) da (dt ++ dtrans) dst de) fa (xs ++ newstates)
-      where
-        dtrans = getNewTransition ds fa x (getNextIndex ds 0)
-        newstates = getNewEps ds dtrans
-getDFAutomata dfs _ [] = dfs
+    where
+      dtrans = getNewTransition ds (trans fa) (alphabet fa) x (getNextIndex ds 0)
+      newstates = getNewEps ds dtrans
+getDFAutomata dfa _ [] = dfa
 
 {-|
 Parses highest index from array of states 'EpsClosure' represented as 'DState'.
@@ -67,28 +75,17 @@ Returns next free index.
 getNextIndex  :: [EpsClosure]     -- ^ States of Deterministic Finite Automata 'DFAutomata'
               -> Int              -- ^ Starting index for specifying minimum index
               -> Int              -- ^ Next free index
-getNextIndex (x:xs) num =
-  if num > n
-    then getNextIndex xs num
-    else getNextIndex xs n
-    where
-      n = getNextIndex' x
+getNextIndex (x:xs) num = getNextIndex xs $ maximum [(stateIndex x),num]
 getNextIndex [] num = num + 1
-
--- | Returns index of single state of Deterministic Finite Automata 'DFAutomata'.
-getNextIndex' :: EpsClosure   -- ^ Sinle state of Deterministic Finite Automata 'DFAutomata'
-              -> Int          -- ^ Returns state index
-getNextIndex' (ECls n _) = n
 
 -- | Identifies finite states in Deterministic Finite Automata 'DFAutomata'.
 getFiniteStates :: [EpsClosure]   -- ^ States of Deterministic Finite Automata 'DFAutomata'
                 -> [AState]       -- ^ Finite states of Finite Automata 'FAutomata'
                 -> [EpsClosure]   -- ^ Finite states of Deterministic Finite Automata 'DFAutomata'
-getFiniteStates (x:xs) ss =
-  if isFiniteState x ss
-    then [x] ++ getFiniteStates xs ss
-    else getFiniteStates xs ss
 getFiniteStates [] _ = []
+getFiniteStates xs ss = filter (isFinalState') xs
+    where
+        isFinalState' = isFinalState ss
 
 -- |
 getNewEps :: [EpsClosure] -> [DTransition] -> [EpsClosure]
@@ -97,112 +94,109 @@ getNewEps _ [] = []
 
 -- |
 getNewEps' :: [EpsClosure] -> DTransition -> Bool -> [EpsClosure]
-getNewEps' (x:xs) t False = getNewEps' xs t (getNewEps'' x t)
+getNewEps' (x:xs) t False = getNewEps' xs t eq
+    where
+        eq = isEqEpsClosure x $ origStates $ dtoState t
 getNewEps' _ _ True = []
-getNewEps' [] (DTrans fs s ts) False = [ts]
-
--- |
-getNewEps'' :: EpsClosure -> DTransition -> Bool
-getNewEps'' (ECls _ ns) (DTrans _ _ (ECls _ dns)) =
-  if ns == dns then True else False
+getNewEps' [] t False = [(dtoState t )]
 
 -- | Parses Finite Automata's alphabet from array of 'Transition' and removes duplicity.
 getAlphabet :: [Transition]   -- ^ Transitions of Finite Automata 'FAutomata'
             -> [ASymbol]      -- ^ Finite Automata's alphabet
-getAlphabet xs = nub $ getAlphabet' xs
+getAlphabet (x:xs) = nub $ sym x : getAlphabet xs
+getAlphabet [] = []
 
--- | Parses Finite Automata's alphabet from array of 'Transition'
-getAlphabet'  :: [Transition]   -- ^
-              -> [ASymbol]      -- ^
-getAlphabet' (x:xs) = getAlphabetSymbol x : getAlphabet' xs
-getAlphabet' [] = []
-
--- |
-getAlphabetSymbol :: Transition -> ASymbol
-getAlphabetSymbol (Trans fs s ts) = s
-
--- |
-isFiniteState :: EpsClosure -> [AState] -> Bool
-isFiniteState (ECls s os) (x:xs) = if x `elem` os then True else isFiniteState (ECls s os) xs
-isFiniteState _ [] = False
+-- | Decides whether a state of Deterministic Finite Automata 'DFAutomata' is final or not.
+isFinalState :: [AState]       -- ^ Final states of Finite Automata 'FAutomata'
+              -> EpsClosure     -- ^ State of Deterministic Finite Automata 'DFAutomata'
+              -> Bool           -- ^ True if EpsClosure is finite state, False otherwise
+isFinalState (x:xs) eps  =
+    if x `elem` origStates eps then True else isFinalState xs eps
+isFinalState [] _ = False
 
 -- |
-getNewTransition :: [EpsClosure] -> FAutomata -> EpsClosure -> Int -> [DTransition]
-getNewTransition ds (FA q (a:as) t s f) e num = if null nts
-    then (getNewTransition ds (FA q (as) t s f) e num)
-    else [(DTrans e a xx)]  ++ (getNewTransition add (FA q (as) t s f) e (getNextIndex add 1))
+getNewTransition    :: [EpsClosure]
+                    -> [Transition]
+                    -> [ASymbol]
+                    -> EpsClosure
+                    -> Int
+                    -> [DTransition]
+getNewTransition ds t (a:as) eps num =
+    if null nts
+    then (getNewTransition ds t (as) eps num)
+    else (DTrans eps a newState) : (getNewTransition newECls t (as) eps (getNextIndex newECls 1))
     where
-        nts = (getNewTransition' t a e)
-        xx = createNewEpsClosure ds num $ sort (getEpsClosure t nts)
-        add = addEpsClosure ds xx
-getNewTransition _ (FA _ [] _ _ _) _ _ = []
+        nts = getNewTransition' t a eps
+        newState = createEpsClosure ds num $ sort (getEpsClosure t nts)
+        newECls = nub $ newState : ds
+getNewTransition _ _ [] _ _ = []
 
 -- |
-addEpsClosure :: [EpsClosure] -> EpsClosure -> [EpsClosure]
-addEpsClosure [] eps = [eps]
-addEpsClosure es eps = es ++ (addEpsClosure' es eps)
-  where
-    addEpsClosure' :: [EpsClosure] -> EpsClosure -> [EpsClosure]
-    addEpsClosure' (x:xs) eps@(ECls _ e) = if isNewEpsClosure x e
-      then  addEpsClosure' xs eps
-      else []
-    addEpsClosure' [] eps = [eps]
-
--- |
-createNewEpsClosure :: [EpsClosure] -> Int -> [AState] -> EpsClosure
-createNewEpsClosure [] num ss = (ECls num ss)
-createNewEpsClosure (x:xs) num ss = if isNewEpsClosure x ss
-  then createNewEpsClosure xs num ss
-  else x
-
--- |
-isNewEpsClosure :: EpsClosure -> [AState] -> Bool
-isNewEpsClosure (ECls _ ss) as = (sort ss) /= (sort as)
-
--- |
-getNewTransition' :: [Transition] -> ASymbol -> EpsClosure -> [AState]
-getNewTransition' (x:xs) a (ECls s os) =
-    if isNothing tns then ntns
-        else [fromJust tns] ++ ntns
+getNewTransition'   :: [Transition]
+                    -> ASymbol
+                    -> EpsClosure
+                    -> [AState]
+getNewTransition' (x:xs) a eps =
+    if isElem then (toState x) : states
+    else states
     where
-        tns = getNewTransition'' x a os
-        ntns = getNewTransition' xs a (ECls s os)
-getNewTransition' [] x y = []
+        isElem = (fromState x) `elem` origStates eps && a == sym x
+        states = getNewTransition' xs a eps
+getNewTransition' [] _ _ = []
+
+{-|
+Checks if a state of Deterministic Finite Automata 'DFAutomata' with
+same origStates exists. If that state doesn't exist, creates a new one.
+Otherwise returns existing state. Works similar to Singleton pattern.
+-}
+createEpsClosure :: [EpsClosure]   -- ^ All states of DFA
+                -> Int            -- ^ Potential index of the new state
+                -> [AState]       -- ^ States in original Finite Automata 'FAutomata'
+                -> EpsClosure     -- ^ State of the DFA with needed origStates
+createEpsClosure [] num ss = (ECls num ss)
+createEpsClosure (x:xs) num ss =
+  if isEqEpsClosure x ss
+  then x
+  else createEpsClosure xs num ss
+
+-- | Decides whether 'AState' array is equal to origStates of 'EpsClosure'.
+isEqEpsClosure  :: EpsClosure     -- ^ Single state of Deterministic Finite Automata 'DFAutomata'
+                -> [AState]       -- ^ Array of 'AState'
+                -> Bool           -- ^ True if equal, False otherwise
+isEqEpsClosure eps as = (sort $ origStates eps) == sort as
+
+-- | Parses initial state for Deterministic Finite Automata 'DFAutomata' from array of 'Transition'.
+getInitialState :: [Transition]   -- ^ Transitions of Finite Automata 'FAutomata'
+                -> AState         -- ^ Initial state of Finite Automata 'FAutomata'
+                -> EpsClosure     -- ^ Initial state of Deterministic Finite Automata 'DFAutomata'
+getInitialState t s = ECls 1 $ sort $ getEpsClosure t [s]
 
 -- |
-getNewTransition'' :: Transition -> ASymbol -> [AState] -> Maybe AState
-getNewTransition'' (Trans fs s ts) a xs = if fs `elem` xs && s == a then Just ts else Nothing
-
--- |
-getInitialState :: [Transition] -> AState -> EpsClosure
-getInitialState t s = ECls 1 (sort (getEpsClosure t [s]))
-
--- |
-getEpsClosure :: [Transition] -> [AState] -> [AState]
+getEpsClosure :: [Transition]
+              -> [AState]
+              -> [AState]
 getEpsClosure t xs =
-  if xs == nxs then nub xs
+    if xs == nxs then nub xs
     else nub $ getEpsClosure' t nxs
-  where
-    nxs =  getEpsClosure' t xs
-
--- |
-getEpsClosure' :: [Transition]  -> [AState] -> [ASymbol]
-getEpsClosure' (x:xs) ys = if isNothing ns
-                            then getEpsClosure' xs ys
-                            else getEpsClosure' xs ([fromJust ns] ++ ys)
     where
-        ns = getEpsCls x ys
-        getEpsCls :: Transition -> [AState] -> Maybe ASymbol
-        getEpsCls (Trans fs "" ts) xs = if fs `elem` xs then Just ts else Nothing
-        getEpsCls _ _ = Nothing
+        nxs =  getEpsClosure' t xs
+
+-- | Creates
+getEpsClosure'  :: [Transition]
+                -> [AState]
+                -> [AState]
+getEpsClosure' (x:xs) ys =
+    if null (sym x) && fromState x `elem` ys
+    then getEpsClosure' xs $ (toState x) : ys
+    else getEpsClosure' xs ys
 getEpsClosure' [] ys = sort ys
 
 -- | Parses program input and returns Finite Automata 'FAutomata'.
 procLns :: [String]     -- ^ Lines of program's input
         -> FAutomata    -- ^ Parsed Finite Automata 'FAutomata'
-procLns (states:[start]:final:transitions) =
+procLns (states:[initial]:final:transitions) =
     if null transitions then error "no transitions"
-    else FA getStates getAlph rules [start] getFinal
+    else FA getStates getAlph rules [initial] getFinal
     where
         getStates = splitOn "," states
         getFinal = splitOn "," final

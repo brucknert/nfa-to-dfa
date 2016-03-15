@@ -26,27 +26,27 @@ type DState = Int
 
 -- | Describes Finite Automata with epsilon transitions that is used as input for this program.
 data FAutomata = FA
-  { states :: [AState]      -- ^ All states
-  , alphabet :: [ASymbol]   -- ^ Alphabet
-  , trans :: [Transition]   -- ^ Transitions
-  , start :: AState         -- ^ Initial state
-  , end :: [AState]         -- ^ End states
-  } deriving (Eq)
+      { states :: [AState]      -- ^ All states
+      , alphabet :: [ASymbol]   -- ^ Alphabet
+      , trans :: [Transition]   -- ^ Transitions
+      , initial :: AState       -- ^ Initial state
+      , finals :: [AState]      -- ^ Final states
+      } deriving (Eq)
 
 -- | Prints Finite Automata 'FAutomata' in desirable format.
 instance Show FAutomata where
-  show (FA q _ t s f) =
-    id intercalate "," q ++ "\n" ++ id s ++ "\n" ++ id intercalate "," f ++ printTransition t
+    show (FA q _ t s f) =
+        id intercalate "," q ++ "\n" ++ id s ++ "\n" ++ id intercalate "," f ++ printTransition t
 
 {-|
 Describes single transition in Finite Automata 'FAutomata'.
 It is not used for Deterministic Finite Automata 'DFAutomata'.
 -}
 data Transition = Trans
-  { fromState :: AState   -- ^ Actual state
-  , fromSym :: ASymbol    -- ^ Input symbol, empty string for epsilon
-  , toState :: AState     -- ^ Next state
-  } deriving (Eq)
+    { fromState :: AState   -- ^ Actual state
+    , sym :: ASymbol    -- ^ Input symbol, empty string for epsilon
+    , toState :: AState     -- ^ Next state
+    } deriving (Eq)
 
 -- | Prints Transition 'Transition' in desirable format.
 instance Show Transition where
@@ -60,27 +60,27 @@ printTransition [] = []
 
 -- | Describes Deterministic Finite Automata that is used as output for this program.
 data DFAutomata = DFA
-  { dstates :: [EpsClosure]   -- ^ All states
-  , dalphabet :: [ASymbol]    -- ^ Alphabet
-  , dtrans :: [DTransition]   -- ^ Transitions
-  , dstart :: EpsClosure      -- ^ Initial state
-  , dend :: [EpsClosure]      -- ^ End states
-  } deriving (Eq)
+    { dstates :: [EpsClosure]   -- ^ All states
+    , dalphabet :: [ASymbol]    -- ^ Alphabet
+    , dtrans :: [DTransition]   -- ^ Transitions
+    , dinitial :: EpsClosure      -- ^ Initial state
+    , dfinals :: [EpsClosure]      -- ^ Final states
+    } deriving (Eq)
 
 -- | Prints DFAutomata 'DFAutomata' in desirable format.
 instance Show DFAutomata where
-  show (DFA q _ t s f) = --show q
-    printECls q ++ "\n" ++ printECls [s] ++ "\n" ++ printECls f ++ printDTransition t
+    show (DFA q _ t s f) = --show q
+        printECls q ++ "\n" ++ printECls [s] ++ "\n" ++ printECls f ++ printDTransition t
 
 -- | Single state of Deterministic Finite Automata 'DFAutomata'.
 data EpsClosure = ECls
-  { stateName :: DState       -- ^ Name of the state
-  , origStates :: [AState]    -- ^ Represents states in original Finite Automata 'FAutomata'
-  } deriving (Eq)
+    { stateIndex :: DState       -- ^ Name of the state
+    , origStates :: [AState]    -- ^ Represents states in original Finite Automata 'FAutomata'
+    } deriving (Eq)
 
 -- | Prints EpsClosure 'EpsClosure' in desirable format.
 instance Show EpsClosure where
-  show (ECls s ss) = show s ++ show ss
+    show (ECls s ss) = show s ++ show ss
 
 -- | Prints array of states of Deterministic Finite Automata 'DFAutomata'.
 printECls :: [EpsClosure]   -- ^ Array of 'EpsClosure' for printing
@@ -94,20 +94,20 @@ Describes single transition in Deterministic Finite Automata 'DFAutomata'.
 It is not used for Finite Automata 'FAutomata'.
 -}
 data DTransition = DTrans
-  { dfromState :: EpsClosure  -- ^ Actual state
-  , dfromSym :: ASymbol       -- ^ Input symbol, cannot be epsilon
-  , dtoState :: EpsClosure    -- ^ Next state
-  } deriving (Eq)
+    { dfromState :: EpsClosure  -- ^ Actual state
+    , dsym :: ASymbol       -- ^ Input symbol, cannot be epsilon
+    , dtoState :: EpsClosure    -- ^ Next state
+    } deriving (Eq)
 
 -- | Prints DTransition 'DTransition' in desirable format.
 instance Show DTransition where
-  show (DTrans ds s ts) = show ds ++ show s ++ show ts
+    show (DTrans ds s ts) = show ds ++ show s ++ show ts
 
 -- | Prints array 'DTransition'.
 printDTransition  :: [DTransition]  -- ^ Array of 'DTransition' for printing
                   -> String         -- ^ Output 'String' in desirable format
 printDTransition [(DTrans fs s ts)] =
-  "\n" ++ printECls [fs] ++ "," ++ id s ++ "," ++ printECls [ts]
+    "\n" ++ printECls [fs] ++ "," ++ id s ++ "," ++ printECls [ts]
 printDTransition (x:xs) = printDTransition [x] ++ printDTransition xs
 printDTransition [] = []
 

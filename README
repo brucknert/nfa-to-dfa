@@ -1,0 +1,6 @@
+Program funguje tak, že naparsuje konečný automat na vstupu. Následně udělá epsilon uzávěr počátečního stavu.
+Následně vytvoří přechody přes všechny symboly abecedy pro tento počáteční epsilon uzávěr. Pokud byl
+vygenerován nový stav (do kterého se přejde z počátečního), přidá se tento nový stav do stavů DKA
+a zároveň se přidá do pole stavů DKA, u kterých se budou generovat přechody. Pokud je pole prázdné, tak
+probíhá zjištění koncových stavů DKA. Pokud stav DKA obsahuje některý koncový stav z původníhoautomatu,
+pak je i tento stav DKA koncový. Algoritmus končí a vrací DKA.

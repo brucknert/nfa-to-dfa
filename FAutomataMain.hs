@@ -10,19 +10,19 @@ Portability :  portable
 
 [@Example program run::@]
 
-  -./FAutomataMain options [input_file]
+    -./FAutomataMain options [input_file]
 
 [@options:@]
 
 Parameters are mutually exclusive and either one  of them must be specified.
 
-  -\-i   - prints input Finite Automata 'FAutomata'
+    -\-i   - prints input Finite Automata 'FAutomata'
 
-  -\-t  - transforms Finite Automata 'FAutomata' with epsilon transitions to Deterministic Finite Automata 'DFAutomata'
+    -\-t  - transforms Finite Automata 'FAutomata' with epsilon transitions to Deterministic Finite Automata 'DFAutomata'
 
 [@input_file:@]
 
-  -stdin is used if name of the file is not provided
+    -stdin is used if name of the file is not provided
 -}
 
 module Main(main) where
@@ -38,15 +38,15 @@ main = do
     args <- getArgs
     let (transform, inFile) = procArgs args
     content <- if inFile == "stdin"
-        then hGetContents stdin
-        else do
-            hInFile <- openFile inFile ReadMode
-            content <- hGetContents hInFile
-            return content
+    then hGetContents stdin
+    else do
+        hInFile <- openFile inFile ReadMode
+        content <- hGetContents hInFile
+        return content
     fa <- getFiniteAutomata content
     if transform
-        then transformFiniteAutomata fa
-        else dumpFiniteAutomata fa
+    then transformFiniteAutomata fa
+    else dumpFiniteAutomata fa
     return ()
 
 {-|
