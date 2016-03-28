@@ -64,14 +64,13 @@ dumpFiniteAutomata fa = do
     putStrLn $ show fa
 
 -- | Transforms FA 'FAutomata' to DFA 'DFAutomata' and prints it.
-transformFiniteAutomata :: FAutomata  -- ^ FA that should be trasnformed
-                        -> IO ()      -- ^ Output DFA
+transformFiniteAutomata :: FAutomata  -- ^ FA to be trasnformed
 transformFiniteAutomata fa@(FA q a t s f)  = do
+                        -> IO ()      -- ^ Output DFA
     let q0 = getInitialState t s
     let dfa = DFA [q0] a [] q0 []
     let tdfa = getDFAutomata dfa fa [q0]
     putStrLn $ show tdfa
-    return ()
 
 {-|
 Transforms empty DFA 'DFAutomata' from FA 'FAutomata'.

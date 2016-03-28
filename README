@@ -4,3 +4,15 @@ vygenerován nový stav (do kterého se přejde z počátečního), přidá se t
 a zároveň se přidá do pole stavů DKA, u kterých se budou generovat přechody. Pokud je pole prázdné, tak
 probíhá zjištění koncových stavů DKA. Pokud stav DKA obsahuje některý koncový stav z původníhoautomatu,
 pak je i tento stav DKA koncový. Algoritmus končí a vrací DKA.
+
+Překlad:
+gmake
+
+Překlad a spuštění testu:
+gmake run
+
+Překlad a spustění -t stdin:
+gmake runstdin
+
+Vygenerování haddock dokumentace:
+gmake doc
