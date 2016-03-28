@@ -2,7 +2,7 @@ default:
 	ghc --make FAutomataMain.hs
 
 run:
-	ghc --make FAutomataMain.hs && ./FAutomataMain -t example/test.in
+	ghc --make FAutomataMain.hs && ./FAutomataMain -t example/test1.in
 
 runstdin:
 	ghc --make FAutomataMain.hs && ./FAutomataMain -t
