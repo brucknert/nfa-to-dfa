@@ -4,7 +4,7 @@ Description :  Data structures and types.
 Copyright   :  (c) Tomas Bruckner 2016
 License     :  MIT
 
-Maintainer  :  xbruck02@stud.fit.vutbr.cz
+Maintainer  :  tomasbrucknermail@gmail.com
 Stability   :  stable
 Portability :  portable
 
